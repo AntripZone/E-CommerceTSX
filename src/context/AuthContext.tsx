@@ -1,10 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import type { Session, User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { authApi, getAuthToken, setAuthToken, type AuthUser } from '@/lib/supabase';
 
 type AuthContextType = {
-  user: User | null;
-  session: Session | null;
+  user: AuthUser | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -14,48 +12,80 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
+    const token = getAuthToken();
+    if (!token) {
       setLoading(false);
-    });
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => listener.subscription.unsubscribe();
+      return;
+    }
+    authApi
+      .getUser(token)
+      .then((res) => {
+        setUser({ id: res.data.id, email: res.data.email });
+      })
+      .catch(() => {
+        setAuthToken(null);
+        setUser(null);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message ?? null };
+    try {
+      const res = await authApi.signIn(email, password);
+      setAuthToken(res.data.access_token);
+      setUser({ id: res.data.user.id, email: res.data.user.email });
+      return { error: null };
+    } catch (err) {
+      const message =
+        err instanceof Error && 'response' in err
+          ? (err as { response?: { data?: { msg?: string; error_description?: string } } }).response?.data?.msg ??
+            (err as { response?: { data?: { msg?: string; error_description?: string } } }).response?.data?.error_description ??
+            'Failed to sign in'
+          : 'Failed to sign in';
+      return { error: message };
+    }
   };
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    return { error: error?.message ?? null };
+    try {
+      const res = await authApi.signUp(email, password);
+      const token = res.data.access_token;
+      if (token) {
+        setAuthToken(token);
+        setUser({ id: res.data.user.id, email: res.data.user.email });
+      }
+      return { error: null };
+    } catch (err) {
+      const message =
+        err instanceof Error && 'response' in err
+          ? (err as { response?: { data?: { msg?: string; error_description?: string } } }).response?.data?.msg ??
+            (err as { response?: { data?: { msg?: string; error_description?: string } } }).response?.data?.error_description ??
+            'Failed to sign up'
+          : 'Failed to sign up';
+      return { error: message };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await authApi.signOut();
+    } catch {
+    }
+    setAuthToken(null);
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');

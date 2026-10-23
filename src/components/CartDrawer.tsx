@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
-import { formatPrice } from '../lib/format';
+import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
+import { dataApi } from '@/lib/supabase';
+import { formatPrice } from '@/lib/format';
 import { X, Plus, Minus, Trash2, CheckCircle2, ShoppingCart } from 'lucide-react';
 
 export default function CartDrawer() {
@@ -17,13 +17,12 @@ export default function CartDrawer() {
     setPlacing(true);
     setError(null);
     try {
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({ total: subtotal, status: 'pending', user_id: user.id })
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
+      const orderRes = await dataApi.createOrder({
+        total: subtotal,
+        status: 'pending',
+        user_id: user.id,
+      });
+      const order = orderRes.data[0];
 
       const orderItems = items.map((item) => ({
         order_id: order.id,
@@ -33,8 +32,7 @@ export default function CartDrawer() {
         quantity: item.quantity,
       }));
 
-      const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
-      if (itemsError) throw itemsError;
+      await dataApi.createOrderItems(orderItems);
 
       clearCart();
       setSuccess(true);

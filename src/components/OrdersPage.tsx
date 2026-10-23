@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { supabase, type OrderWithItems } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
-import { formatPrice, formatDate } from '../lib/format';
+import { dataApi, type OrderWithItems } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
+import { formatPrice, formatDate } from '@/lib/format';
 import { Package, Clock, CheckCircle2, XCircle } from 'lucide-react';
 
 const STATUS_STYLES: Record<string, { label: string; icon: typeof Clock; className: string }> = {
@@ -17,19 +17,15 @@ export default function OrdersPage() {
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from('orders')
-      .select('*, order_items(*)')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (error) {
-          console.error('Failed to load orders:', error);
-        } else {
-          setOrders((data ?? []) as OrderWithItems[]);
-        }
-        setLoading(false);
-      });
+    dataApi
+      .getOrders(user.id)
+      .then((res) => {
+        setOrders(res.data as OrderWithItems[]);
+      })
+      .catch((err) => {
+        console.error('Failed to load orders:', err);
+      })
+      .finally(() => setLoading(false));
   }, [user]);
 
   if (loading) {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { supabase, type Product } from '../lib/supabase';
-import { useCart } from '../context/CartContext';
-import { formatPrice } from '../lib/format';
+import { dataApi, type Product } from '@/lib/supabase';
+import { useCart } from '@/context/CartContext';
+import { formatPrice } from '@/lib/format';
 import { Plus, Check } from 'lucide-react';
 
 const CATEGORIES = ['All', 'Bread', 'Pastry', 'Cake', 'Dessert'];
@@ -14,19 +14,15 @@ export default function ShopPage() {
   const { addToCart } = useCart();
 
   useEffect(() => {
-    supabase
-      .from('products')
-      .select('*')
-      .eq('available', true)
-      .order('name')
-      .then(({ data, error }) => {
-        if (error) {
-          console.error('Failed to load products:', error);
-        } else {
-          setProducts(data ?? []);
-        }
-        setLoading(false);
-      });
+    dataApi
+      .getProducts()
+      .then((res) => {
+        setProducts(res.data as Product[]);
+      })
+      .catch((err) => {
+        console.error('Failed to load products:', err);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const filtered = category === 'All' ? products : products.filter((p) => p.category === category);

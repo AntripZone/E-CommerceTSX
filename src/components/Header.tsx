@@ -1,5 +1,5 @@
-import { useAuth } from '../context/AuthContext';
-import { useCart } from '../context/CartContext';
+import { useAuth } from '@/context/AuthContext';
+import { useCart } from '@/context/CartContext';
 import { Croissant, ShoppingCart, Package, LogOut, Store } from 'lucide-react';
 
 type View = 'shop' | 'orders';
