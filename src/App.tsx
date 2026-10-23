@@ -13,6 +13,7 @@ type View = 'shop' | 'orders' | 'admin';
 function AppContent() {
   const { user, loading } = useAuth();
   const [view, setView] = useState<View>('shop');
+  const [showAuth, setShowAuth] = useState(false);
 
   if (loading) {
     return (
@@ -22,17 +23,20 @@ function AppContent() {
     );
   }
 
-  // Orders page requires login; everything else is accessible
+  if (showAuth || (view === 'orders' && !user)) {
+    return <AuthPage
+      onBack={() => { setShowAuth(false); setView('shop'); }}
+      onSuccess={() => { setShowAuth(false); setView('admin');
+      }}
+    />;
+  }
+
   const effectiveView: View = view === 'orders' && !user ? 'shop' : view;
 
-  // If not logged in and trying to access orders, show auth
-  if (view === 'orders' && !user) {
-    return <AuthPage />;
-  }
 
   return (
     <div className="min-h-screen bg-stone-50">
-      <Header view={effectiveView} onViewChange={setView} />
+      <Header view={effectiveView} onViewChange={setView} onSignIn={() => setShowAuth(true)} />
       <main>
         {effectiveView === 'shop' && <ShopPage />}
         {effectiveView === 'orders' && user && <OrdersPage />}

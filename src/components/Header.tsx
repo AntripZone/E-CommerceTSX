@@ -7,9 +7,10 @@ type View = 'shop' | 'orders' | 'admin';
 type Props = {
   view: View;
   onViewChange: (view: View) => void;
+  onSignIn: () => void;
 };
 
-export default function Header({ view, onViewChange }: Props) {
+export default function Header({ view, onViewChange, onSignIn }: Props) {
   const { user, isAdmin, signOut } = useAuth();
   const { totalItems, setIsOpen } = useCart();
 
@@ -94,9 +95,12 @@ export default function Header({ view, onViewChange }: Props) {
               </button>
             </div>
           ) : (
-            <div className="hidden md:block ml-1 pl-3 border-l border-stone-200">
-              <span className="text-sm text-stone-400">Not signed in</span>
-            </div>
+            <button
+              onClick={onSignIn}
+              className="ml-1 pl-3 border-l border-stone-200 px-3 py-2 rounded-lg text-sm font-medium text-amber-700 hover:bg-amber-50 transition-colors"
+            >
+              Sign In
+            </button>
           )}
 
           {user && (

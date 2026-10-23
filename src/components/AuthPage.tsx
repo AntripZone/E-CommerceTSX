@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { Croissant } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { Croissant, ArrowLeft } from 'lucide-react';
 
-export default function AuthPage() {
+export default function AuthPage({ onBack, onSuccess }: { onBack?: () => void; onSuccess?: () => void }) {
   const { signIn, signUp } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
@@ -15,16 +15,27 @@ export default function AuthPage() {
     setError(null);
     setLoading(true);
     const fn = mode === 'signin' ? signIn : signUp;
-    const { error } = await fn(email, password);
+    const result = await fn(email, password);
     setLoading(false);
-    if (error) {
-      setError(error);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      onSuccess?.();
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 px-4">
       <div className="w-full max-w-md">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1.5 text-stone-500 hover:text-stone-800 text-sm font-medium mb-4 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to shop
+          </button>
+        )}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-600 text-white mb-4 shadow-lg">
             <Croissant className="w-8 h-8" />

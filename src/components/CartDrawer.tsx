@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { dataApi } from '@/lib/supabase';
-import { formatPrice } from '@/lib/format';
+import { formatPrice, extractErrorMessage } from '@/lib/format';
 import { X, Plus, Minus, Trash2, CheckCircle2, ShoppingCart } from 'lucide-react';
 
 export default function CartDrawer() {
@@ -13,7 +13,11 @@ export default function CartDrawer() {
   const [success, setSuccess] = useState(false);
 
   const handleCheckout = async () => {
-    if (!user || items.length === 0) return;
+    if (items.length === 0) return;
+    if (!user) {
+      setError('Please sign in to place your order.');
+      return;
+    }
     setPlacing(true);
     setError(null);
     try {
@@ -41,7 +45,8 @@ export default function CartDrawer() {
         setIsOpen(false);
       }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to place order');
+      const message = extractErrorMessage(err);
+      setError(message);
     } finally {
       setPlacing(false);
     }
