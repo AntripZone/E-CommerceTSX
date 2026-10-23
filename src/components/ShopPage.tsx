@@ -15,7 +15,7 @@ export default function ShopPage() {
 
   useEffect(() => {
     dataApi
-      .getProducts()
+      .getAvailableProducts()
       .then((res) => {
         setProducts(res.data as Product[]);
       })

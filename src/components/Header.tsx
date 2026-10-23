@@ -1,8 +1,8 @@
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
-import { Croissant, ShoppingCart, Package, LogOut, Store } from 'lucide-react';
+import { Croissant, ShoppingCart, Package, LogOut, Store, LayoutDashboard } from 'lucide-react';
 
-type View = 'shop' | 'orders';
+type View = 'shop' | 'orders' | 'admin';
 
 type Props = {
   view: View;
@@ -10,7 +10,7 @@ type Props = {
 };
 
 export default function Header({ view, onViewChange }: Props) {
-  const { user, signOut } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
   const { totalItems, setIsOpen } = useCart();
 
   return (
@@ -26,7 +26,7 @@ export default function Header({ view, onViewChange }: Props) {
           <span className="text-xl font-bold text-stone-800 hidden sm:block">Maison Dorée</span>
         </button>
 
-        <nav className="flex items-center gap-2 sm:gap-4">
+        <nav className="flex items-center gap-1.5 sm:gap-3">
           <button
             onClick={() => onViewChange('shop')}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -38,16 +38,31 @@ export default function Header({ view, onViewChange }: Props) {
             <Store className="w-4 h-4" />
             <span className="hidden sm:inline">Shop</span>
           </button>
+
+          {user && (
+            <button
+              onClick={() => onViewChange('orders')}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                view === 'orders'
+                  ? 'text-amber-700 bg-amber-50'
+                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
+              }`}
+            >
+              <Package className="w-4 h-4" />
+              <span className="hidden sm:inline">Orders</span>
+            </button>
+          )}
+
           <button
-            onClick={() => onViewChange('orders')}
+            onClick={() => onViewChange('admin')}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              view === 'orders'
+              view === 'admin'
                 ? 'text-amber-700 bg-amber-50'
                 : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
             }`}
           >
-            <Package className="w-4 h-4" />
-            <span className="hidden sm:inline">Orders</span>
+            <LayoutDashboard className="w-4 h-4" />
+            <span className="hidden sm:inline">Admin</span>
           </button>
 
           <button
@@ -62,22 +77,36 @@ export default function Header({ view, onViewChange }: Props) {
             )}
           </button>
 
-          <div className="hidden md:flex items-center gap-3 ml-2 pl-4 border-l border-stone-200">
-            <span className="text-sm text-stone-500">{user?.email}</span>
+          {user ? (
+            <div className="hidden md:flex items-center gap-3 ml-1 pl-3 border-l border-stone-200">
+              <span className="text-sm text-stone-500 max-w-[160px] truncate">{user.email}</span>
+              {isAdmin && (
+                <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
+                  Admin
+                </span>
+              )}
+              <button
+                onClick={signOut}
+                className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-stone-600 hover:text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <div className="hidden md:block ml-1 pl-3 border-l border-stone-200">
+              <span className="text-sm text-stone-400">Not signed in</span>
+            </div>
+          )}
+
+          {user && (
             <button
               onClick={signOut}
-              className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-stone-600 hover:text-red-600 hover:bg-red-50 transition-colors"
+              className="md:hidden p-2 rounded-lg text-stone-600 hover:text-red-600 hover:bg-red-50 transition-colors"
             >
-              <LogOut className="w-4 h-4" />
-              Sign Out
+              <LogOut className="w-5 h-5" />
             </button>
-          </div>
-          <button
-            onClick={signOut}
-            className="md:hidden p-2 rounded-lg text-stone-600 hover:text-red-600 hover:bg-red-50 transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
+          )}
         </nav>
       </div>
     </header>

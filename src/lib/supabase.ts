@@ -45,12 +45,28 @@ export const authApi = {
 };
 
 export const dataApi = {
-  getProducts: () =>
+  getProducts: () => api.get("/rest/v1/products?select=*&order=name.asc"),
+  getAvailableProducts: () =>
     api.get("/rest/v1/products?select=*&available=eq.true&order=name.asc"),
+  createProduct: (payload: Omit<Product, "id" | "created_at">) =>
+    api.post("/rest/v1/products?select=*", payload, {
+      headers: { Prefer: "return=representation" },
+    }),
+  updateProduct: (
+    id: string,
+    payload: Partial<Omit<Product, "id" | "created_at">>,
+  ) =>
+    api.patch(`/rest/v1/products?select=*&id=eq.${id}`, payload, {
+      headers: { Prefer: "return=representation" },
+    }),
+  deleteProduct: (id: string) => api.delete(`/rest/v1/products?id=eq.${id}`),
+
   getOrders: (userId: string) =>
     api.get(
       `/rest/v1/orders?select=*,order_items(*)&user_id=eq.${userId}&order=created_at.desc`,
     ),
+  getAllOrders: () =>
+    api.get("/rest/v1/orders?select=*,order_items(*)&order=created_at.desc"),
   createOrder: (payload: { total: number; status: string; user_id: string }) =>
     api.post("/rest/v1/orders?select=*", payload, {
       headers: { Prefer: "return=representation" },
@@ -64,6 +80,16 @@ export const dataApi = {
       quantity: number;
     }[],
   ) => api.post("/rest/v1/order_items", items),
+  updateOrderStatus: (id: string, status: string) =>
+    api.patch(
+      `/rest/v1/orders?select=*&id=eq.${id}`,
+      { status },
+      {
+        headers: { Prefer: "return=representation" },
+      },
+    ),
+
+  checkAdmin: () => api.get("/rest/v1/admins?select=id&limit=1"),
 };
 
 export type Product = {

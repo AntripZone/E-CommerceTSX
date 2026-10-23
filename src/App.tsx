@@ -5,9 +5,10 @@ import AuthPage from '@/components/AuthPage';
 import Header from '@/components/Header';
 import ShopPage from '@/components/ShopPage';
 import OrdersPage from '@/components/OrdersPage';
+import AdminDashboard from '@/components/AdminDashboard';
 import CartDrawer from '@/components/CartDrawer';
 
-type View = 'shop' | 'orders';
+type View = 'shop' | 'orders' | 'admin';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -21,15 +22,21 @@ function AppContent() {
     );
   }
 
-  if (!user) {
+  // Orders page requires login; everything else is accessible
+  const effectiveView: View = view === 'orders' && !user ? 'shop' : view;
+
+  // If not logged in and trying to access orders, show auth
+  if (view === 'orders' && !user) {
     return <AuthPage />;
   }
 
   return (
     <div className="min-h-screen bg-stone-50">
-      <Header view={view} onViewChange={setView} />
+      <Header view={effectiveView} onViewChange={setView} />
       <main>
-        {view === 'shop' ? <ShopPage /> : <OrdersPage />}
+        {effectiveView === 'shop' && <ShopPage />}
+        {effectiveView === 'orders' && user && <OrdersPage />}
+        {effectiveView === 'admin' && <AdminDashboard />}
       </main>
       <CartDrawer />
       <footer className="bg-stone-800 text-stone-400 py-8 mt-12">

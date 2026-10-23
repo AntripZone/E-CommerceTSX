@@ -1,8 +1,9 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { authApi, getAuthToken, setAuthToken, type AuthUser } from '@/lib/supabase';
+import { authApi, dataApi, getAuthToken, setAuthToken, type AuthUser } from '@/lib/supabase';
 
 type AuthContextType = {
   user: AuthUser | null;
+  isAdmin: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -13,6 +14,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,10 +27,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .getUser(token)
       .then((res) => {
         setUser({ id: res.data.id, email: res.data.email });
+        return dataApi.checkAdmin();
+      })
+      .then((res) => {
+        setIsAdmin(res.data.length > 0);
       })
       .catch(() => {
         setAuthToken(null);
         setUser(null);
+        setIsAdmin(false);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -38,6 +45,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await authApi.signIn(email, password);
       setAuthToken(res.data.access_token);
       setUser({ id: res.data.user.id, email: res.data.user.email });
+
+      try {
+        const adminRes = await dataApi.checkAdmin();
+        setIsAdmin(adminRes.data.length > 0);
+      } catch {
+        setIsAdmin(false);
+      }
+
       return { error: null };
     } catch (err) {
       const message =
@@ -77,10 +92,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setAuthToken(null);
     setUser(null);
+    setIsAdmin(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, isAdmin, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
